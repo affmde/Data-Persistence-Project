@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
-{
+{   
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
@@ -17,6 +18,12 @@ public class MainManager : MonoBehaviour
     private int m_Points;
     
     private bool m_GameOver = false;
+    
+    public string inputName;
+    public Text bestScoreText;
+    private int bestPoints;
+    private string recordName;
+    private int recordPoints;
 
     
     // Start is called before the first frame update
@@ -36,6 +43,12 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+
+        inputName = MenuManager.Instance.inputText;
+        Debug.Log("Nam: " + inputName);
+
+        LoadStats();
+        bestScoreText.text = "Best Score: " + recordPoints + " Name: " + recordName;
     }
 
     private void Update()
@@ -72,5 +85,44 @@ public class MainManager : MonoBehaviour
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        if(m_Points > recordPoints){
+            bestPoints= m_Points;
+            bestScoreText.text = "Best Score: " + bestPoints + " Name: " + inputName;
+            SaveStats();
+        }
     }
+
+    [System.Serializable]
+    class SaveData{
+        public string name;
+        public int score;
+    }
+
+    public void SaveStats(){
+        SaveData data = new SaveData();
+        data.name = inputName;
+        data.score = bestPoints;
+
+        string json = JsonUtility.ToJson(data);
+
+        File.WriteAllText(Application.persistentDataPath + "savefile.json", json);
+    }
+
+    public void LoadStats(){
+        Debug.Log("Stats load");
+        string path = Application.persistentDataPath + "savefile.json";
+        if(File.Exists(path)){
+            string json = File.ReadAllText(path);
+            SaveData data= JsonUtility.FromJson<SaveData>(json);
+
+            recordName = data.name;
+            recordPoints = data.score;
+            Debug.Log("Stats loaded already");
+        }
+    }
+
+    public void BackToMenu(){
+        SceneManager.LoadScene(0);
+    }
+
 }
